@@ -33,10 +33,46 @@ object Anagrams {
    *
    *  Note: you must use `groupBy` to implement this method!
    */
-  def wordOccurrences(w: Word): Occurrences = ???
+  def wordOccurrences(w: Word): Occurrences = {
+    val pWord = w.toLowerCase.groupBy((ch: Char) => ch).toList
+    pWord.map({case (ch, l) => (ch, l.length)}).sorted
+  }
 
   /** Converts a sentence into its character occurrence list. */
-  def sentenceOccurrences(s: Sentence): Occurrences = ???
+  def sentenceOccurrences(s: Sentence): Occurrences = {
+    def updateOccurrences(curr: Occurrences, updates: Occurrences): Occurrences = {
+      (curr, updates) match {
+        case (Nil, _) => throw new UnknownError("This should never happen")
+        case (ch :: ct, Nil) => curr
+        case (ch :: ct, uh :: ut) => {
+          val (c, n) = uh
+          val ex = curr.find(el => el._1 == c)
+          if (ex.isDefined) {
+            val ind = curr.indexOf(ex.get)
+            val newEl = (ex.get._1, ex.get._2 + n)
+            //update element
+            updateOccurrences(curr.updated(ind, newEl), ut)
+          } else {
+              //add element
+            updateOccurrences(uh :: curr, ut)
+          }
+        }
+      }
+    }
+    def processWords(stnc: Sentence, ol: Occurrences): Occurrences = {
+      (stnc, ol) match {
+        case (List(), List()) => Nil
+        case (List(), olh :: olt) => ol
+        case (sh :: st, Nil) => processWords(st, wordOccurrences(sh))
+        case (sh :: st, olh :: olt) => {
+          val wo = wordOccurrences(sh)
+          // insert elements of wo into ol
+          processWords(st, updateOccurrences(ol, wo))
+        }
+      }
+    }
+    processWords(s, Nil).sorted
+  }
 
   /** The `dictionaryByOccurrences` is a `Map` from different occurrences to a sequence of all
    *  the words that have that occurrence count.
